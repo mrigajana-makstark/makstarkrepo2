@@ -1,4 +1,14 @@
 /*! tailwindcss v4.1.3 | MIT License | https://tailwindcss.com */
+@font-face {
+  font-family: 'Ragam';
+  src: url('/assets/fonts/Ragam.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+body {
+  font-family: 'Ragam', sans-serif !important;
+}
+
 @layer properties {
   @supports (((-webkit-hyphens: none)) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
     *, :before, :after, ::backdrop {

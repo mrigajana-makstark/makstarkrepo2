@@ -12,7 +12,7 @@ export function LandingPage() {
 
   // Hero background images rotation
   const heroImages = [
-    'https://ik.imagekit.io/makstark/MS%20WEBSITE/11%20(22).jpg?updatedAt=1757604581154',
+    'https://ik.imagekit.io/makstark/MS%20WEBSITE/_MAK4756.png?updatedAt=1758650821029  ',
     'https://ik.imagekit.io/makstark/MS%20WEBSITE/11%20(19).jpg?updatedAt=1757604547675',
     'https://ik.imagekit.io/makstark/MS%20WEBSITE/11%20(17).jpg?updatedAt=1757604582542'
   ];
@@ -121,6 +121,20 @@ export function LandingPage() {
     return () => clearInterval(interval);
   }, [testimonials.length]);
 
+  // Typing effect for headline
+  const headline = "We Create. We Capture. We Customize.";
+  const [typedText, setTypedText] = useState("");
+  useEffect(() => {
+    setTypedText(""); // reset on mount
+    let i = 0;
+    const interval = setInterval(() => {
+      setTypedText(headline.slice(0, i + 1));
+      i++;
+      if (i === headline.length) clearInterval(interval);
+    }, 50); // typing speed in ms
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -142,7 +156,8 @@ export function LandingPage() {
               transition={{ duration: 0.8 }}
               className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-blue-100 to-blue-300 bg-clip-text text-transparent"
             >
-              We Create. We Capture. We Customize.
+              {typedText}
+              <span className="animate-pulse">|</span>
             </motion.h1>
             
             <motion.p

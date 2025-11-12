@@ -32,6 +32,7 @@ import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 import { NewEntryPage } from './NewEntryPage'; // Adjust path if needed
 import { PortfolioCardUpload } from './PortfolioCardUpload';
+import OfferLetterGeneratorExternal from './offer-letter';
 
 interface DashboardPageProps {
   onLogout: () => void;
@@ -46,7 +47,6 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
   const navItems = [
     { path: '/dashboard/new-entry', icon: PlusCircle, label: 'New Entry', featured: true },
     { path: '/dashboard/portfolio-upload', icon: ImageIcon, label: 'Card Upload & Management' },
-    { path: '/dashboard/pdf-generator', icon: FileText, label: 'PDF Generator' },
     { path: '/dashboard/pdf-generator', icon: FileText, label: 'PDF Generator' },
     { path: '/dashboard/offer-letter', icon: Mail, label: 'Offer Letter Generator' },
     { path: '/dashboard/quotation', icon: Calculator, label: 'Quotation Generator' },
@@ -168,7 +168,7 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
             <Route path="/new-entry" element={<NewEntryPage />} />
              <Route path="/portfolio-upload" element={<PortfolioCardUpload />} />
             <Route path="/pdf-generator" element={<PDFGenerator />} />
-            <Route path="/offer-letter" element={<OfferLetterGenerator />} />
+            <Route path="/offer-letter" element={<OfferLetterGeneratorExternal />} />
             <Route path="/quotation" element={<QuotationGenerator />} />
             <Route path="/settings" element={<SettingsPanel />} />
           </Routes>
