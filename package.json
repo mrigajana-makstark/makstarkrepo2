@@ -63,7 +63,6 @@
       "scripts": {
             "dev": "vite",
             "build": "vite build",
-            "predeploy": "npm run build",
-            "deploy": "gh-pages -d dist"
+            "deploy": "npm run build && git subtree split --prefix build -b gh-pages && git push origin gh-pages -f"
       }
 }
