@@ -63,6 +63,8 @@
       "scripts": {
             "dev": "vite",
             "build": "vite build",
-            "deploy": "npm run build && git subtree split --prefix build -b gh-pages && git push origin gh-pages -f"
+            "deploy": "npm run build && git subtree split --prefix build -b gh-pages && git push origin gh-pages -f",
+            "pull": "git pull origin master",
+            "push": "git add . && git commit -m \"$npm_config_message\" && git push origin master"
       }
 }
