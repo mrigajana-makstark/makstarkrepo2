@@ -474,7 +474,7 @@ export function LandingPage() {
               Ready to bring your vision to life? Get in touch with our creative team today.
             </p>
             <Button size="lg" asChild className="bg-white text-blue-600 hover:bg-gray-100">
-              <Link to="/contact">Start Your Project</Link>
+              <Link to="/contact">Start Your Project Now</Link>
             </Button>
           </motion.div>
         </div>
