@@ -38,7 +38,7 @@ export default function App() {
   };
 
   return (
-    <Router>
+    <Router basename="/">
       <div className="min-h-screen bg-background text-foreground">
         <Routes>
           {/* Public Routes */}
