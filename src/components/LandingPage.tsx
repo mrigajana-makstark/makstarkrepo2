@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
+// @ts-ignore TS: no declaration file for 'lucide-react'
 import { ChevronRight, Play, Camera, Video, Shirt, Palette, Star, Users, Award, Heart } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -521,8 +522,8 @@ export function LandingPage() {
               <h4 className="text-white font-semibold mb-4">Contact</h4>
               <ul className="space-y-2 text-gray-400">
                 <li>Haldia, West Bengal</li>
-                <li>hello@makstark.com</li>
-                <li>+91 98765 43210</li>
+                <li>info.makstark@gmail.com</li>
+                <li>+91 8653802996</li>
               </ul>
             </div>
           </div>
