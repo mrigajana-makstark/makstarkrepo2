@@ -1,0 +1,8 @@
+* text=auto
+*.js text
+*.css text
+*.html text
+*.json text
+*.ts text
+*.tsx text
+build/** binary
