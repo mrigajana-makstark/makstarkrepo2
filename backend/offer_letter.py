@@ -8,6 +8,7 @@ from io import BytesIO
 import os
 from supabase import create_client
 from typing import Optional
+from datetime import datetime, timedelta
 
 # ---- JWT Setup ----
 SECRET_KEY = "19441678e34d5ff1feef4cd612f5a90858e69e24f1853a5d3cb467d4e422b6a9"
@@ -21,35 +22,27 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 router = APIRouter()
 
-@router.post("/calculate-amount")
+@router.post("/offer-letter")
 async def offer_letter(request: Request):
     try:
         body = await request.json()
         print("Received JSON body:", body)
-        deliverables = body.get("deliverables", [])
+        
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid request body: {e}")
 
-    # Example processing: sum numeric 'amount' fields in deliverables
-    total = 0.0
-    if isinstance(deliverables, list):
-        for item in deliverables:
-            try:
-                total += float(item.get("amount", 0))
-            except Exception:
-                continue
-
-    return {"deliverables": deliverables, "total": total}
+    
 
 # Dependency to verify JWT (optional token)
 def get_current_user(token: Optional[str] = Depends(oauth2_scheme)):
     if not token:
-        return None
+        return None  # Allow requests without token in dev mode
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        # In dev mode, allow invalid tokens to proceed; in prod you might want to raise
+        return None
 
 # --- Paths for template, font and letterhead (adjust if needed) ---
 BASE_DIR = os.path.dirname(__file__)
@@ -101,7 +94,20 @@ def build_pdf_bytes(data: dict) -> bytes:
     # use provided template if available, otherwise build a simple one
     if _TEMPLATE:
         try:
-            text = _TEMPLATE.format(**data)
+            # Add default empty values for missing fields
+            safe_data = {
+                "start_date": "",
+                "end_date": "",
+                "additionalNotes": "",
+                "name": "",
+                "position": "",
+                "salary": "",
+                "department": "",
+                **data
+            }
+            text = _TEMPLATE.format(**safe_data)
+            # Replace rupee symbol with "Rs." for PDF compatibility
+            text = text.replace("₹", "Rs.")
         except Exception as e:
             raise ValueError(f"Template formatting error: {e}")
     else:
@@ -115,8 +121,8 @@ def build_pdf_bytes(data: dict) -> bytes:
         )
 
     pdf.multi_cell(170, 8, text)
-    raw = pdf.output(dest="S")  # returns str
-    return raw.encode("latin-1", "replace")
+    raw = pdf.output()  # returns bytes directly
+    return raw
 
 # Accept dynamic payloads from frontend (no strict pydantic model)
 @router.post("/generate-offer")
@@ -127,6 +133,7 @@ async def generate_offer(request: Request, user=Depends(get_current_user)):
     """
     try:
         body = await request.json()
+        print("Received JSON body:", body)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
 
@@ -162,19 +169,42 @@ async def generate_offer_pdf(request: Request, preview: bool = Query(False), use
         "name": body.get("name") or body.get("candidateName") or "",
         "position": body.get("position") or body.get("eventName") or "",
         "salary": body.get("salary") or body.get("amount") or body.get("ctc") or "",
+        "start_date": body.get("start_date") or body.get("startDate") or "",
+        "department": body.get("department") or body.get("dept") or "",
         **body  # keep all other fields available for template.format
     }
+    
+    # Calculate end date (3 days after start_date)
+    start_date_str = payload.get("start_date") or ""
+    if start_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            end_date = start_date + timedelta(days=3)
+            payload["end_date"] = end_date.strftime("%Y-%m-%d")
+        except Exception as e:
+            print(f"Date parsing error: {e}")
+            payload["end_date"] = ""
+    else:
+        payload["end_date"] = ""
 
     try:
         pdf_bytes = build_pdf_bytes(payload)
     except ValueError as e:
+        print(f"ValueError in PDF generation: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Unexpected error in PDF generation: {e}")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
     filename = f"Offer_Letter_{(payload.get('name') or 'offer').replace(' ','_')}.pdf"
     disposition_type = "inline" if preview else "attachment"
-    return StreamingResponse(BytesIO(pdf_bytes), media_type="application/pdf", headers={
-        "Content-Disposition": f'{disposition_type}; filename="{filename}"'
+    response = StreamingResponse(BytesIO(pdf_bytes), media_type="application/pdf", headers={
+        "Content-Disposition": f'{disposition_type}; filename="{filename}"',
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
     })
+    return response
 
 # Optional: batch endpoint to generate multiple PDFs and return a zip
 @router.post("/generate-offer-batch-zip")

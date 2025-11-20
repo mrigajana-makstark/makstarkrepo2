@@ -18,7 +18,7 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { toast } from "sonner";
-
+import { API_BASE_URL } from "../config/apiConfig";
 interface NewCandidateFormData {
   candidateName: string;
   position: string;
@@ -55,7 +55,7 @@ export default function OfferLetterGenerator() {
     additionalNotes: "",
   });
 
-  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://127.0.0.1:8000";
+  const BACKEND_URL = API_BASE_URL;
 
   // ensure this always returns an object (fixes TS HeadersInit union error)
     function getAuthHeader(): Record<string, string> {
@@ -89,6 +89,7 @@ export default function OfferLetterGenerator() {
     "Customs",
     "Creative Agency",
     "Administration",
+    "Infotech",
   ];
 
   const handleInputChange = (field: keyof NewCandidateFormData, value: string) => {
@@ -126,10 +127,10 @@ export default function OfferLetterGenerator() {
       additionalNotes: formData.additionalNotes,
       formData,
     };
-    console.log("POST -> /generate-offer", payload);
+    console.log("POST -> /offer/generate-offer", payload);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/generate-offer`, {
+      const res = await fetch(`${BACKEND_URL}/offer/generate-offer`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -186,7 +187,7 @@ export default function OfferLetterGenerator() {
     toast.loading(preview ? "Generating preview..." : "Generating PDF...", { id: "pdf-gen" });
 
     try {
-      const url = `${BACKEND_URL}/generate-offer-pdf?preview=${preview ? "true" : "false"}`;
+      const url = `${BACKEND_URL}/offer/generate-offer-pdf?preview=${preview ? "true" : "false"}`;
       const res = await fetch(url, {
         method: "POST",
         headers: {
