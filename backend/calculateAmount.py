@@ -2,11 +2,20 @@ from fastapi import APIRouter, HTTPException, Request
 from supabase import create_client
 from datetime import datetime
 from dateutil import parser
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 router = APIRouter()
 
-SUPABASE_URL = "https://wcwudnrtrccudoaigneo.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3VkbnJ0cmNjdWRvYWlnbmVvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzU5OTA4OCwiZXhwIjoyMDczMTc1MDg4fQ.oef-sMzX_0b15OOWECcUOGB3mDdlrG7L9_wYX9GhrLg"
+# Use environment variables (loaded from .env or system)
+SUPABASE_URL = os.getenv("VITE_SUPABASE_URL", "https://wcwudnrtrccudoaigneo.supabase.co")
+SUPABASE_KEY = os.getenv("VITE_SUPABASE_KEY", "")
+
+if not SUPABASE_KEY:
+    raise ValueError("VITE_SUPABASE_KEY environment variable not set. Please configure your .env file.")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -24,17 +33,21 @@ async def calculate_amount(request: Request):
         if not deliverables:
             raise HTTPException(status_code=400, detail="No deliverables provided")
 
-        # Fetch rates from Supabase
-        responseForDaysEvent = supabase.table("FactorForAmountCalculationDay").select("deliverable, amount").in_("deliverable", deliverables).execute()
-        response = supabase.table("FactorForAmountCalculation").select("deliverable, amount").in_("deliverable", deliverables).execute()
-        print("Deliverables response:", eventType)
-        client_name = body.get("clientName", "")
+        try:
+            # Fetch rates from Supabase
+            responseForDaysEvent = supabase.table("FactorForAmountCalculationDay").select("deliverable, amount").in_("deliverable", deliverables).execute()
+            response = supabase.table("FactorForAmountCalculation").select("deliverable, amount").in_("deliverable", deliverables).execute()
+            print("Deliverables response:", eventType)
+            client_name = body.get("clientName", "")
 
-        eventNumber = supabase.table("FactorForEventCode").select("eventType, eventCode").eq("eventType", eventType).execute()
+            eventNumber = supabase.table("FactorForEventCode").select("eventType, eventCode").eq("eventType", eventType).execute()
 
-        print("Event number response:", eventNumber)
-        print("Supabase response (per event):", response)
-        print("Supabase response (per day):", responseForDaysEvent)
+            print("Event number response:", eventNumber)
+            print("Supabase response (per event):", response)
+            print("Supabase response (per day):", responseForDaysEvent)
+        except Exception as db_error:
+            print(f"Database error: {db_error}")
+            raise HTTPException(status_code=503, detail="Database service unavailable. Please try again later.")
 
         # Check if data is present
         if response.data is None and responseForDaysEvent.data is None:
@@ -99,4 +112,5 @@ async def calculate_amount(request: Request):
         raise http_exc
     except Exception as e:
         # Catch all other exceptions and return as error message
+        print(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

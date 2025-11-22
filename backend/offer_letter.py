@@ -9,6 +9,10 @@ import os
 from supabase import create_client
 from typing import Optional
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # ---- JWT Setup ----
 SECRET_KEY = "19441678e34d5ff1feef4cd612f5a90858e69e24f1853a5d3cb467d4e422b6a9"
@@ -16,8 +20,13 @@ ALGORITHM = "HS256"
 # make token optional for dev (auto_error=False)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
-SUPABASE_URL = "https://wcwudnrtrccudoaigneo.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3VkbnJ0cmNjdWRvYWlnbmVvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzU5OTA4OCwiZXhwIjoyMDczMTc1MDg4fQ.oef-sMzX_0b15OOWECcUOGB3mDdlrG7L9_wYX9GhrLg"
+# Use environment variables (loaded from .env or system)
+SUPABASE_URL = os.getenv("VITE_SUPABASE_URL", "https://wcwudnrtrccudoaigneo.supabase.co")
+SUPABASE_KEY = os.getenv("VITE_SUPABASE_KEY", "")
+
+if not SUPABASE_KEY:
+    print("WARNING: VITE_SUPABASE_KEY not set, PDF generation may fail.")
+
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 router = APIRouter()
@@ -197,7 +206,9 @@ async def generate_offer_pdf(request: Request, preview: bool = Query(False), use
     if start_date_str:
         try:
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-            end_date = start_date + timedelta(days=3)
+            end_date = start_date + timedelta(days=30)
+            decision_date = start_date + timedelta(days=3)
+            payload["decision_date"] = decision_date.strftime("%Y-%m-%d")
             payload["end_date"] = end_date.strftime("%Y-%m-%d")
         except Exception as e:
             print(f"Date parsing error: {e}")
@@ -239,6 +250,217 @@ async def generate_offer_pdf(request: Request, preview: bool = Query(False), use
         }
     )
     return response
+
+# Generate Entry PDF with tabular deliverables format
+@router.post("/generate-entry-pdf")
+async def generate_entry_pdf(request: Request, preview: bool = Query(False), user=Depends(get_current_user)):
+    """
+    Generate a project entry PDF with tabular deliverables format.
+    Accepts form data from NewEntryPage; returns PDF (inline for preview).
+    """
+    try:
+        body = await request.json()
+        print(f"Received entry PDF request body: {body}")
+    except Exception as e:
+        print(f"JSON parse error: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+
+    # Create PDF with tabular deliverables
+    pdf = CustomPDF()
+    pdf.add_page()
+    
+    # Register font
+    if os.path.exists(FONT_PATH):
+        try:
+            pdf.add_font("DejaVu", "", FONT_PATH, uni=True)
+            pdf.set_font("DejaVu", "", 10)
+        except Exception:
+            pdf.set_font("Arial", "", 10)
+    else:
+        pdf.set_font("Arial", "", 10)
+
+    # Position below letterhead
+    pdf.set_xy(15, 50)
+    
+    # Title
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "PROJECT QUOTATION", ln=True, align="C")
+    
+    # Client Details
+    pdf.set_font("Arial", "", 10)
+    pdf.set_xy(15, 65)
+    
+    client_name = body.get('clientName', 'N/A')
+    event_name = body.get('eventName', 'N/A')
+    event_type = body.get('eventType', 'N/A')
+    event_code = body.get('eventCode', 'N/A')
+    invoice_date = body.get('invoiceDate', 'N/A')
+    
+    pdf.multi_cell(0, 5, f"Client: {client_name}\nEvent: {event_name}\nType: {event_type}\nEvent Code: {event_code}\nDate: {invoice_date}", border=0)
+    
+    # Deliverables Table
+    pdf.set_xy(15, 95)
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(130, 8, "Deliverables", border=1, align="L")
+    pdf.cell(50, 8, "Status", border=1, align="C", ln=True)
+    
+    pdf.set_font("Arial", "", 9)
+    deliverables = body.get('deliverables', [])
+    for deliverable in deliverables:
+        # Wrap long text
+        deliverable_text = deliverable[:50] + "..." if len(deliverable) > 50 else deliverable
+        pdf.set_x(15)
+        pdf.cell(130, 7, deliverable_text, border=1, align="L")
+        pdf.cell(50, 7, "Included", border=1, align="C", ln=True)
+    
+    # Financial Details
+    pdf.set_xy(15, pdf.get_y() + 5)
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(0, 8, "Financial Details", ln=True)
+    
+    pdf.set_font("Arial", "", 10)
+    amount = body.get('amount', '0')
+    discount = body.get('discount', '0')
+    
+    pdf.cell(100, 7, f"Project Amount: Rs. {amount}")
+    pdf.cell(0, 7, "", ln=True)
+    pdf.cell(100, 7, f"Discount: {discount}%")
+    pdf.cell(0, 7, "", ln=True)
+    
+    # Additional Notes
+    additional = body.get('additionalNotes', '')
+    if additional:
+        pdf.set_xy(15, pdf.get_y() + 3)
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(0, 8, "Notes:", ln=True)
+        pdf.set_font("Arial", "", 9)
+        pdf.multi_cell(0, 5, additional)
+    
+    # Footer info
+    poc = body.get('empPointOfContact', 'N/A')
+    pdf.set_xy(15, pdf.get_y() + 5)
+    pdf.set_font("Arial", "", 8)
+    pdf.cell(0, 5, f"Point of Contact: {poc}", ln=True)
+    
+    # Generate PDF bytes
+    try:
+        raw = pdf.output(dest='S')
+        if isinstance(raw, str):
+            raw = raw.encode('latin-1')
+    except Exception as e:
+        print(f"PDF output error: {e}")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+    
+    if not raw or len(raw) == 0:
+        raise HTTPException(status_code=500, detail="PDF generation resulted in empty output")
+    
+    filename = f"ProjectQuotation_{client_name.replace(' ','_')}.pdf"
+    disposition_type = "inline" if preview else "attachment"
+    
+    print(f"Generating entry PDF: {filename}, size: {len(raw)} bytes, preview: {preview}")
+    
+    response = StreamingResponse(
+        BytesIO(raw), 
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'{disposition_type}; filename="{filename}"',
+            "Content-Length": str(len(raw)),
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )
+    return response
+
+# Process Entry - handles form submission and returns processed data
+@router.post("/process-entry")
+async def process_entry(request: Request, user=Depends(get_current_user)):
+    """
+    Process a new entry from the NewEntryPage form.
+    Returns processed data with generated invoice number, calculations, etc.
+    """
+    try:
+        body = await request.json()
+        print(f"Processing entry: {body.get('clientName', 'Unknown')}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+
+    # Extract form data
+    client_name = body.get('clientName', '')
+    event_name = body.get('eventName', '')
+    amount = body.get('amount', '0')
+    discount = body.get('discount', '0')
+    deliverables = body.get('deliverables', [])
+    
+    if not client_name or not event_name:
+        raise HTTPException(status_code=400, detail="Client name and event name are required")
+
+    try:
+        # Convert to float for calculations
+        amount_val = float(amount) if amount else 0
+        discount_val = float(discount) if discount else 0
+        
+        # Calculate amounts
+        discount_amount = (amount_val * discount_val) / 100
+        subtotal = amount_val - discount_amount
+        tax_rate = 0.18  # 18% GST
+        tax_amount = subtotal * tax_rate
+        final_amount = subtotal + tax_amount
+        
+        # Generate invoice number
+        import uuid
+        from datetime import datetime
+        invoice_num = f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8].upper()}"
+        
+        # Calculate completion date (30 days from event end)
+        event_end = body.get('eventEndDate', '')
+        completion_date = event_end
+        if event_end:
+            try:
+                from datetime import datetime, timedelta
+                end_date = datetime.strptime(event_end, '%Y-%m-%d')
+                completion_date = (end_date + timedelta(days=30)).strftime('%Y-%m-%d')
+            except Exception as e:
+                print(f"Date calculation error: {e}")
+        
+        # Generate project timeline
+        timeline = f"""
+Event Duration: {body.get('eventStartDate', '')} to {body.get('eventEndDate', '')}
+Pre-production: 7-14 days before event
+Post-production: 30 days after event completion
+Delivery: {completion_date}
+        """.strip()
+        
+        # Generate terms and conditions
+        terms = """
+1. Payment Terms: 50% advance, 50% on delivery
+2. Cancellation Policy: 30 days notice for full refund
+3. Delivery: All deliverables within agreed timeline
+4. Revisions: Up to 2 rounds of revisions included
+5. Copyright: All materials property of Mak Stark unless specified
+6. Confidentiality: All project details are confidential
+        """.strip()
+        
+        # Build response
+        response_data = {
+            "id": str(uuid.uuid4()),
+            "formData": body,
+            "generatedInvoiceNumber": invoice_num,
+            "totalAmount": str(subtotal),
+            "taxAmount": str(tax_amount),
+            "finalAmount": str(final_amount),
+            "termsAndConditions": terms,
+            "projectTimeline": timeline,
+            "estimatedCompletion": completion_date,
+            "status": "processed"
+        }
+        
+        print(f"Entry processed successfully: {invoice_num}")
+        return response_data
+        
+    except Exception as e:
+        print(f"Error processing entry: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing entry: {str(e)}")
 
 # Optional: batch endpoint to generate multiple PDFs and return a zip
 @router.post("/generate-offer-batch-zip")

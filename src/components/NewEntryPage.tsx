@@ -28,6 +28,7 @@ import { Separator } from './ui/separator';
 import { Alert, AlertDescription } from './ui/alert';
 import { toast } from 'sonner';
 import { eventNames } from 'process';
+import { API_ENDPOINTS } from '../config/apiConfig';
 
 interface NewEntryFormData {
   clientName: string;
@@ -65,6 +66,8 @@ export function NewEntryPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState<NewEntryFormData>({
     clientName: '',
     eventName: '',
@@ -82,6 +85,15 @@ export function NewEntryPage() {
     additionalNotes: '',
     eventCode: ''
   });
+
+  // Cleanup blob URL on unmount
+  React.useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl) {
+        URL.revokeObjectURL(pdfPreviewUrl);
+      }
+    };
+  }, [pdfPreviewUrl]);
 
   const eventTypes = [
     'Wedding Photography',
@@ -164,7 +176,7 @@ export function NewEntryPage() {
   // if (!validateForm()) return;
 
   try {
-    const res = await fetch("http://127.0.0.1:8000/calculate-amount", {
+    const res = await fetch(API_ENDPOINTS.calculate.amount, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -214,6 +226,84 @@ export function NewEntryPage() {
     return true;
   };
 
+  const handlePreview = async () => {
+    if (!validateForm()) return;
+
+    setIsConfirmed(true);
+    toast.loading("Generating preview PDF...", { id: "pdf-preview" });
+
+    try {
+      // Create payload with all form data
+      const payload = {
+        clientName: formData.clientName,
+        eventName: formData.eventName,
+        clientContact: formData.clientContact,
+        clientEmail: formData.clientEmail,
+        eventStartDate: formData.eventStartDate,
+        eventEndDate: formData.eventEndDate,
+        invoiceDate: formData.invoiceDate,
+        eventType: formData.eventType,
+        amount: formData.amount,
+        discount: formData.discount,
+        referral: formData.referral,
+        empPointOfContact: formData.empPointOfContact,
+        deliverables: formData.deliverables,
+        additionalNotes: formData.additionalNotes,
+        eventCode: formData.eventCode
+      };
+
+      // Call the backend to generate PDF
+      const response = await fetch(`${API_ENDPOINTS.offer.generateEntryPdf}?preview=true`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to generate preview');
+      }
+
+      const blob = await response.blob();
+      
+      if (blob.size === 0) {
+        throw new Error('Generated PDF is empty');
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
+      if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+      setPdfPreviewUrl(blobUrl);
+      setShowPreview(true);
+      toast.success("Preview ready!", { id: "pdf-preview" });
+    } catch (error) {
+      console.error('Preview error:', error);
+      toast.error(error instanceof Error ? error.message : 'Error generating preview', { id: "pdf-preview" });
+    } finally {
+      setIsConfirmed(false);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    if (!pdfPreviewUrl) return;
+    
+    const a = document.createElement('a');
+    a.href = pdfPreviewUrl;
+    a.download = `ProjectDetails_${formData.clientName.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const closePreview = () => {
+    if (pdfPreviewUrl) {
+      URL.revokeObjectURL(pdfPreviewUrl);
+      setPdfPreviewUrl(null);
+    }
+    setShowPreview(false);
+  };
+
   const processEntry = async () => {
     if (!validateForm()) return;
 
@@ -221,22 +311,18 @@ export function NewEntryPage() {
     setCurrentStep(2);
 
     try {
-      // Get Supabase credentials
-      const { projectId, publicAnonKey } = await import('../utils/supabase/info');
-      
-      // Call backend API
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e9eea15d/process-entry`, {
+      // Call backend API to process entry
+      const response = await fetch(`${API_ENDPOINTS.offer.processEntry}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
         },
         body: JSON.stringify(formData)
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to process entry');
+        throw new Error(error.error || error.detail || 'Failed to process entry');
       }
 
       const processed = await response.json();
@@ -278,15 +364,13 @@ Post-production: 30-45 business days after event
     toast.loading('Generating PDF...', { id: 'pdf-gen' });
     
     try {
-      // Get Supabase credentials
-      const { projectId, publicAnonKey } = await import('../utils/supabase/info');
-      
-      // Call PDF generation endpoint
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e9eea15d/generate-pdf/${processedData.id}`, {
+      // Call the backend PDF endpoint with the processed data
+      const response = await fetch(`${API_ENDPOINTS.offer.generateEntryPdf}?preview=false`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${publicAnonKey}`
-        }
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(processedData.formData)
       });
 
       if (!response.ok) {
@@ -297,7 +381,7 @@ Post-production: 30-45 business days after event
       const blob = await response.blob();
       const element = document.createElement('a');
       element.href = URL.createObjectURL(blob);
-      element.download = `${processedData.generatedInvoiceNumber}_ProjectDetails.txt`;
+      element.download = `${processedData.generatedInvoiceNumber}_ProjectDetails.pdf`;
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
@@ -907,7 +991,10 @@ Generated by Mak Stark Dashboard System
               </Button>
               
               <div className="flex space-x-4">
-                <Button variant="outline">
+                <Button 
+                  variant="outline"
+                  onClick={handlePreview}
+                >
                   <Eye size={16} className="mr-2" />
                   Preview
                 </Button>
@@ -924,6 +1011,49 @@ Generated by Mak Stark Dashboard System
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Preview Modal */}
+      {showPreview && pdfPreviewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <Card className="w-full max-w-4xl h-[80vh] overflow-hidden flex flex-col">
+            <CardHeader className="border-b flex flex-row items-center justify-between">
+              <CardTitle>Project Quotation Preview</CardTitle>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.open(pdfPreviewUrl, "_blank")}
+                >
+                  <Eye size={16} className="mr-2" />
+                  Open in Tab
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={handleDownloadPDF}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Download size={16} className="mr-2" />
+                  Download
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={closePreview}
+                >
+                  Close
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 p-0 overflow-hidden">
+              <iframe 
+                title="Project Preview" 
+                src={pdfPreviewUrl} 
+                className="w-full h-full border-0"
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

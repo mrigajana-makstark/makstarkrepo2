@@ -10,7 +10,7 @@ For the next one month, you will begin as an {position} Associate under the depa
 
 Your compensation will be performance-based, ranging near Rs.{salary}, depending on the work completed. Your anticipated start date is {start_date} and the evaluation period ends on {end_date}. This offer is contingent upon standard onboarding procedures.
 
-Please let us know your decision by 22nd October,2025. You may contact me at info.makstark@gmail.com if you have any questions.
+Please let us know your decision by {decision_date}. You may contact me at info.makstark@gmail.com if you have any questions.
 
 {additionalNotes}
 

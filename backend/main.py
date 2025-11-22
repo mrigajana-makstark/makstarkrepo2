@@ -9,6 +9,11 @@ from offer_letter import router as offer_router
 from pdf_generator import router as pdf_router
 from calculateAmount import router as calc_router
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Mriganka7@2025
 DATABASE_URL = "postgresql://postgres:Mriganka7%402025@db.wcwudnrtrccudoaigneo.supabase.co:5432/postgres"

@@ -3,12 +3,21 @@ from pydantic import BaseModel
 from passlib.context import CryptContext
 from jose import jwt
 from supabase import create_client, Client
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # ---- Supabase & JWT Setup ----
-SUPABASE_URL = "https://wcwudnrtrccudoaigneo.supabase.co"  # <-- Put your Supabase URL here
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3VkbnJ0cmNjdWRvYWlnbmVvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzU5OTA4OCwiZXhwIjoyMDczMTc1MDg4fQ.oef-sMzX_0b15OOWECcUOGB3mDdlrG7L9_wYX9GhrLg"    # <-- Put your Supabase service role key here
-SECRET_KEY = "19441678e34d5ff1feef4cd612f5a90858e69e24f1853a5d3cb467d4e422b6a9"                     # <-- Put your JWT secret key here
+# Use environment variables (loaded from .env or system)
+SUPABASE_URL = os.getenv("VITE_SUPABASE_URL", "https://wcwudnrtrccudoaigneo.supabase.co")
+SUPABASE_KEY = os.getenv("VITE_SUPABASE_KEY", "")
+SECRET_KEY = "19441678e34d5ff1feef4cd612f5a90858e69e24f1853a5d3cb467d4e422b6a9"
 ALGORITHM = "HS256"
+
+if not SUPABASE_KEY:
+    print("WARNING: VITE_SUPABASE_KEY not set, authentication may fail.")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

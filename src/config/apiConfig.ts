@@ -24,6 +24,8 @@ export const API_ENDPOINTS = {
   offer: {
     generate: `${API_BASE_URL}/offer/generate-offer`,
     generateOffPage: `${API_BASE_URL}/generate-offer`,
+    generateEntryPdf: `${API_BASE_URL}/offer/generate-entry-pdf`,
+    processEntry: `${API_BASE_URL}/offer/process-entry`,
   },
   // PDF endpoints
   pdf: {
