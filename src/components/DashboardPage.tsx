@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { 
-  LayoutDashboard, 
   FileText, 
   Mail, 
   Calculator, 

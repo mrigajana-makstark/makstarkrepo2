@@ -30,28 +30,32 @@ export function LandingPage() {
       description: 'Premium wedding photography & cinematography',
       icon: Camera,
       image: heroImages[0],
-      color: 'from-pink-500 to-rose-600'
+      color: 'from-pink-500 to-rose-600',
+      link: 'https://www.youtube.com/@msproduction841'
     },
     {
       title: 'Production',
       description: 'Events, films & corporate videos',
       icon: Video,
       image: 'https://ik.imagekit.io/makstark/MS%20WEBSITE/IMG-20250821-WA0002.jpg?updatedAt=1757505841835',//heroImages[1],
-      color: 'from-purple-500 to-indigo-600'
+      color: 'from-purple-500 to-indigo-600',
+      link: 'https://www.youtube.com/@makstark'
     },
     {
       title: 'Customs',
       description: 'Branded merchandise & custom products',
       icon: Shirt,
       image: 'https://ik.imagekit.io/makstark/MS%20WEBSITE/web.png?updatedAt=1757618724118',//heroImages[2],
-      color: 'from-green-500 to-teal-600'
+      color: 'from-green-500 to-teal-600',
+      link: 'https://in.pinterest.com/makstark/'
     },
     {
       title: 'Creative Agency',
       description: 'Social media, branding & digital solutions',
       icon: Palette,
       image: 'https://ik.imagekit.io/makstark/MS%20WEBSITE/_MAK4761.JPG?updatedAt=1757507642648',
-      color: 'from-blue-500 to-cyan-600'
+      color: 'from-blue-500 to-cyan-600',
+      link: 'https://www.instagram.com/mak_stark_studio/'
     }
   ];
 
@@ -235,8 +239,10 @@ export function LandingPage() {
                     <CardContent className="p-6">
                       <h3 className="text-xl font-bold text-white mb-2">{vertical.title}</h3>
                       <p className="text-gray-400 mb-4">{vertical.description}</p>
-                      <Button variant="ghost" className="text-blue-400 hover:text-blue-300 p-0">
-                        Explore <ChevronRight size={16} className="ml-1" />
+                      <Button variant="ghost" className="text-blue-400 hover:text-blue-300 p-0" asChild>
+                        <a href={vertical.link} target="_blank" rel="noopener noreferrer">
+                          Explore <ChevronRight size={16} className="ml-1" />
+                        </a>
                       </Button>
                     </CardContent>
                   </Card>
