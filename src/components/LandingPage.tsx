@@ -492,13 +492,13 @@ export function LandingPage() {
                 Creating extraordinary experiences through premium creative solutions.
               </p>
               <div className="flex space-x-4">
-                <a href="https://www.facebook.com/makstark" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors">
+                <a href="https://www.facebook.com/profile.php?id=61556656504228" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors">
                   <Facebook size={18} className="text-white" />
                 </a>
-                <a href="https://www.instagram.com/makstark" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors">
+                <a href="https://www.instagram.com/mak_stark_studio/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors">
                   <Instagram size={18} className="text-white" />
                 </a>
-                <a href="https://www.linkedin.com/company/makstark" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-500 transition-colors">
+                <a href="https://www.linkedin.com/company/mak-stark-co/ " target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-500 transition-colors">
                   <Linkedin size={18} className="text-white" />
                 </a>
               </div>
