@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 // @ts-ignore TS: no declaration file for 'lucide-react'
-import { ChevronRight, Play, Camera, Video, Shirt, Palette, Star, Users, Award, Heart } from 'lucide-react';
+import { ChevronRight, Play, Camera, Video, Shirt, Palette, Star, Users, Award, Heart, Facebook, Instagram, Linkedin } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { ImageWithFallback } from './figma/ImageWithFallback';
@@ -335,16 +335,16 @@ export function LandingPage() {
           <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
             {/* Placeholder for client logos */}
             <div className="w-32 h-16 bg-gray-800 rounded-lg flex items-center justify-center">
-              <span className="text-gray-400 text-sm">Brand Logo</span>
+              <span className="text-white-400 text-sm">Aristrocrat</span>
             </div>
             <div className="w-32 h-16 bg-gray-800 rounded-lg flex items-center justify-center">
-              <span className="text-gray-400 text-sm">Brand Logo</span>
+              <span className="text-white-400 text-sm">Club Aeries</span>
             </div>
             <div className="w-32 h-16 bg-gray-800 rounded-lg flex items-center justify-center">
-              <span className="text-gray-400 text-sm">Brand Logo</span>
+              <span className="text-white-400 text-sm">Harley Davidson</span>
             </div>
             <div className="w-32 h-16 bg-gray-800 rounded-lg flex items-center justify-center">
-              <span className="text-gray-400 text-sm">Brand Logo</span>
+              <span className="text-white-400 text-sm">Zinkyee</span>
             </div>
           </div>
         </div>
@@ -492,10 +492,15 @@ export function LandingPage() {
                 Creating extraordinary experiences through premium creative solutions.
               </p>
               <div className="flex space-x-4">
-                {/* Social icons would go here */}
-                <div className="w-8 h-8 bg-gray-800 rounded-full"></div>
-                <div className="w-8 h-8 bg-gray-800 rounded-full"></div>
-                <div className="w-8 h-8 bg-gray-800 rounded-full"></div>
+                <a href="https://www.facebook.com/makstark" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors">
+                  <Facebook size={18} className="text-white" />
+                </a>
+                <a href="https://www.instagram.com/makstark" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors">
+                  <Instagram size={18} className="text-white" />
+                </a>
+                <a href="https://www.linkedin.com/company/makstark" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-500 transition-colors">
+                  <Linkedin size={18} className="text-white" />
+                </a>
               </div>
             </div>
             

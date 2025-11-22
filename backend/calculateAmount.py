@@ -30,26 +30,6 @@ async def calculate_amount(request: Request):
         print("Deliverables response:", eventType)
         client_name = body.get("clientName", "")
 
-        # Insert a new worksheet row and return the serial number
-    #    worksheet_insert = supabase.table("Worksheet").insert({
-    #        "EVENT_NAME": eventType,
-    #        "EVENT_TYPE": eventType,
-    #        "LOCATION": body.get("location", ""),
-    #        "CLIENT_NAME": client_name,
-    #        "START_DATE": startTime,
-    #        "END_DATE": endTime,
-    #        "JSON": body,
-    #        "QUOTATION": 0,
-    #        "DELIVERABLES": deliverables,
-    #        "CLIENT_CONTACT": body.get("clientContact", ""),
-    #        "CLIENT_EMAIL": body.get("clientEmail", "")
-    #    }).select("id").execute()
-
-    #    if worksheet_insert.data is None or len(worksheet_insert.data) == 0:
-    #        raise HTTPException(status_code=500, detail="Failed to create worksheet record")
-
-    #    serial_number = worksheet_insert.data[0].get("id")
-    #    print("Created worksheet serial:", serial_number)
         eventNumber = supabase.table("FactorForEventCode").select("eventType, eventCode").eq("eventType", eventType).execute()
 
         print("Event number response:", eventNumber)

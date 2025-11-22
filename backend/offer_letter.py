@@ -81,15 +81,15 @@ def build_pdf_bytes(data: dict) -> bytes:
     # register font if available
     if os.path.exists(FONT_PATH):
         try:
-            pdf.add_font("DejaVu", "", FONT_PATH, uni=True)
-            pdf.set_font("DejaVu", "", 12)
+            pdf.add_font("Courier New", "", FONT_PATH, uni=True)
+            pdf.set_font("Courier New", "", 10)
         except Exception:
-            pdf.set_font("Arial", "", 12)
+            pdf.set_font("Arial", "", 10)
     else:
-        pdf.set_font("Arial", "", 12)
+        pdf.set_font("Arial", "", 10)
 
     # position below letterhead (adjust Y value depending on letterhead height)
-    pdf.set_xy(20, 70)
+    pdf.set_xy(20, 50)
 
     # use provided template if available, otherwise build a simple one
     if _TEMPLATE:
@@ -121,7 +121,21 @@ def build_pdf_bytes(data: dict) -> bytes:
         )
 
     pdf.multi_cell(170, 8, text)
-    raw = pdf.output()  # returns bytes directly
+    
+    # Use output with 'S' parameter to return as bytes string
+    raw = pdf.output(dest='S')
+    
+    # Debug: Log the type and length
+    print(f"PDF output type: {type(raw)}, length: {len(raw) if raw else 0}")
+    
+    # Ensure it's bytes
+    if isinstance(raw, str):
+        raw = raw.encode('latin-1')  # Use latin-1 for PDF encoding
+    
+    if not raw or len(raw) == 0:
+        raise ValueError("PDF generation resulted in empty output")
+    
+    print(f"PDF bytes ready: {len(raw)} bytes")
     return raw
 
 # Accept dynamic payloads from frontend (no strict pydantic model)
@@ -161,7 +175,9 @@ async def generate_offer_pdf(request: Request, preview: bool = Query(False), use
     """
     try:
         body = await request.json()
+        print(f"Received PDF request body: {body}")
     except Exception as e:
+        print(f"JSON parse error: {e}")
         raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
 
     # normalize common keys (allow both name and candidateName etc.)
@@ -173,6 +189,8 @@ async def generate_offer_pdf(request: Request, preview: bool = Query(False), use
         "department": body.get("department") or body.get("dept") or "",
         **body  # keep all other fields available for template.format
     }
+    
+    print(f"Normalized payload: {payload}")
     
     # Calculate end date (3 days after start_date)
     start_date_str = payload.get("start_date") or ""
@@ -188,22 +206,38 @@ async def generate_offer_pdf(request: Request, preview: bool = Query(False), use
         payload["end_date"] = ""
 
     try:
+        print(f"Building PDF with payload: {payload}")
         pdf_bytes = build_pdf_bytes(payload)
+        print(f"PDF built successfully: {len(pdf_bytes)} bytes")
     except ValueError as e:
         print(f"ValueError in PDF generation: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         print(f"Unexpected error in PDF generation: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
     filename = f"Offer_Letter_{(payload.get('name') or 'offer').replace(' ','_')}.pdf"
     disposition_type = "inline" if preview else "attachment"
-    response = StreamingResponse(BytesIO(pdf_bytes), media_type="application/pdf", headers={
-        "Content-Disposition": f'{disposition_type}; filename="{filename}"',
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-    })
+    
+    # Ensure pdf_bytes is bytes
+    if not isinstance(pdf_bytes, bytes):
+        pdf_bytes = pdf_bytes.encode('utf-8') if isinstance(pdf_bytes, str) else bytes(pdf_bytes)
+    
+    print(f"Generating PDF: {filename}, size: {len(pdf_bytes)} bytes, preview: {preview}")
+    
+    response = StreamingResponse(
+        BytesIO(pdf_bytes), 
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'{disposition_type}; filename="{filename}"',
+            "Content-Length": str(len(pdf_bytes)),
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )
     return response
 
 # Optional: batch endpoint to generate multiple PDFs and return a zip

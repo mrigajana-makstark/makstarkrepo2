@@ -171,16 +171,20 @@ export default function OfferLetterGenerator() {
 
   // 2) Generate PDF (preview=true => inline)
   const confirmAndGeneratePDF = async (preview = false) => {
-    if (!processedData && !validateForm()) return;
+    if (!validateForm()) return;
 
-    const payload = processedData ? { ...processedData.formData, id: processedData.id } : {
-      candidateName: formData.candidateName,
-      position: formData.position,
-      ctc: formData.ctc,
-      startDate: formData.startDate,
-      dept: formData.dept,
-      additionalNotes: formData.additionalNotes,
-    };
+    // Use processedData if available, otherwise use current form data
+    const payload = processedData 
+      ? { ...processedData.formData, id: processedData.id } 
+      : {
+          candidateName: formData.candidateName,
+          position: formData.position,
+          ctc: formData.ctc,
+          startDate: formData.startDate,
+          dept: formData.dept,
+          additionalNotes: formData.additionalNotes,
+        };
+    
     console.log(`POST -> /generate-offer-pdf?preview=${preview}`, payload);
 
     setIsConfirmed(true);
@@ -199,11 +203,19 @@ export default function OfferLetterGenerator() {
 
       if (!res.ok) {
         const text = await res.text().catch(() => null);
-        throw new Error(text || "Failed to generate PDF");
+        throw new Error(text || `Failed to generate PDF (HTTP ${res.status})`);
       }
 
       const blob = await res.blob();
+      console.log("Blob received:", blob.type, blob.size, "bytes");
+      
+      // Validate blob
+      if (blob.size === 0) {
+        throw new Error("Generated PDF is empty");
+      }
+      
       const blobUrl = URL.createObjectURL(blob);
+      console.log("Blob URL created:", blobUrl);
 
       if (preview) {
         if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
@@ -239,7 +251,7 @@ export default function OfferLetterGenerator() {
         });
       }, 800);
     } catch (err) {
-      console.error(err);
+      console.error("PDF generation error:", err);
       toast.error((err as Error).message || "Error generating PDF", { id: "pdf-gen" });
       setIsConfirmed(false);
     }
@@ -248,7 +260,10 @@ export default function OfferLetterGenerator() {
   const handlePreviewClick = async () => {
     if (!validateForm()) return;
     await processEntry();
-    await confirmAndGeneratePDF(true);
+    // Wait a bit for processEntry to complete, then generate PDF
+    setTimeout(() => {
+      confirmAndGeneratePDF(true);
+    }, 500);
   };
 
   const closePreview = () => {
@@ -348,15 +363,15 @@ export default function OfferLetterGenerator() {
               </Button>
 
               <div className="flex space-x-3">
-                <Button variant="outline" onClick={handlePreviewClick}>
+                <Button variant="outline" onClick={handlePreviewClick} disabled={isProcessing || isConfirmed}>
                   <Eye size={14} className="mr-2" /> Preview
                 </Button>
 
-                <Button onClick={processEntry} className="bg-blue-600 hover:bg-blue-700">
-                  <Save size={14} className="mr-2" /> Process Entry
+                <Button onClick={processEntry} disabled={isProcessing} className="bg-blue-600 hover:bg-blue-700">
+                  {isProcessing ? <><Loader2 className="animate-spin mr-2" size={14} /> Processing...</> : <><Save size={14} className="mr-2" /> Process Entry</>}
                 </Button>
 
-                <Button onClick={() => confirmAndGeneratePDF(false)} className="bg-green-600 hover:bg-green-700" disabled={!processedData || isConfirmed}>
+                <Button onClick={() => confirmAndGeneratePDF(false)} className="bg-green-600 hover:bg-green-700" disabled={isConfirmed}>
                   {isConfirmed ? <><Loader2 className="animate-spin mr-2" size={14} /> Generating...</> : <><Download size={14} className="mr-2" /> Generate & Download</>}
                 </Button>
               </div>

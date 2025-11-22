@@ -9,6 +9,7 @@ import { LoginPage } from './components/LoginPage';
 import { DashboardPage } from './components/DashboardPage';
 import { Navigation } from './components/Navigation';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
+import { checkConnection } from '@/api/supabaseClient';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -25,6 +26,13 @@ export default function App() {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
     }
+
+    // Check connection
+    checkConnection().then(isConnected => {
+      if (!isConnected) {
+        console.warn('Supabase is unavailable');
+      }
+    });
   }, [isDarkMode]);
 
   const handleLogin = () => {

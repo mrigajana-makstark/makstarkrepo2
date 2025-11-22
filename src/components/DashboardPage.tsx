@@ -33,6 +33,7 @@ import { toast } from 'sonner';
 import { NewEntryPage } from './NewEntryPage'; // Adjust path if needed
 import { PortfolioCardUpload } from './PortfolioCardUpload';
 import OfferLetterGeneratorExternal from './offer-letter';
+import { checkConnection } from '@/api/supabaseClient';
 
 interface DashboardPageProps {
   onLogout: () => void;
@@ -67,7 +68,16 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
       .then(data => {
         setUser(data); // { username, role }
       });
-  }, []);
+
+    // Check Supabase connection
+    const verifyConnection = async () => {
+      const connected = await checkConnection();
+      if (!connected) {
+        console.warn('Supabase is unavailable');
+      }
+    };
+    verifyConnection();
+  }, [navigate]);
 
   const handleLogout = () => {
     toast.success('Logged out successfully!');

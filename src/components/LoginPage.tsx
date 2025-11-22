@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Lock, User, ArrowLeft } from 'lucide-react';
@@ -7,10 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { toast, Toaster } from 'sonner';
+import { checkConnection } from '@/api/supabaseClient';
 
 interface LoginPageProps {
   onLogin: () => void;
 }
+
+// Demo credentials
+const DEMO_CREDENTIALS = {
+  username: 'admin',
+  password: 'makstark2024'
+};
 
 export function LoginPage({ onLogin }: LoginPageProps) {
   const [formData, setFormData] = useState({
@@ -19,6 +26,18 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [serverDown, setServerDown] = useState(false);
+
+  useEffect(() => {
+    const verifyConnection = async () => {
+      const isConnected = await checkConnection();
+      console.log('Supabase connected:', isConnected);
+      if (!isConnected) {
+        toast.error('Supabase connection failed');
+      }
+    };
+    verifyConnection();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +57,25 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       if (!res.ok) {
         const errorData = await res.json();
         console.log("Error response:", errorData);
-        toast.error(errorData.detail || "Login failed");
+        
+        // Check if it's a 503 (database unavailable)
+        if (res.status === 503) {
+          // Database is down - allow demo login as fallback
+          if (formData.username === DEMO_CREDENTIALS.username && 
+              formData.password === DEMO_CREDENTIALS.password) {
+            localStorage.setItem("token", "demo_token_" + Date.now());
+            localStorage.setItem("loginMode", "demo");
+            toast.success("Demo login successful! (Database is currently unavailable)");
+            onLogin();
+            setIsLoading(false);
+            return;
+          } else {
+            setServerDown(true);
+            toast.error("Database is unavailable. Please use demo credentials: admin / makstark2024");
+          }
+        } else {
+          toast.error(errorData.detail || "Login failed");
+        }
         setIsLoading(false);
         return;
       }
@@ -46,10 +83,24 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       const data = await res.json();
       console.log("Success response:", data);
       localStorage.setItem("token", data.access_token);
+      localStorage.setItem("loginMode", "production");
       toast.success("Login successful!");
       onLogin();
     } catch (err) {
-      toast.error("Server error" + err);
+      // Server is completely down/unreachable
+      console.log("Server error, attempting demo login:", err);
+      if (formData.username === DEMO_CREDENTIALS.username && 
+          formData.password === DEMO_CREDENTIALS.password) {
+        // Demo login successful
+        localStorage.setItem("token", "demo_token_" + Date.now());
+        localStorage.setItem("loginMode", "demo");
+        toast.success("Demo login successful! (Server is currently unavailable)");
+        onLogin();
+      } else {
+        // Wrong credentials and server is down
+        setServerDown(true);
+        toast.error("Server is currently unavailable. Use demo credentials: admin / makstark2024");
+      }
     }
     setIsLoading(false);
   };
@@ -197,15 +248,26 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="mt-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg"
+                className={`mt-8 p-4 rounded-lg border ${
+                  serverDown 
+                    ? 'bg-red-500/10 border-red-500/30' 
+                    : 'bg-blue-500/10 border-blue-500/20'
+                }`}
               >
-                <p className="text-blue-200 text-sm text-center mb-2">
-                  <strong>Demo Credentials:</strong>
+                <p className={`text-sm text-center mb-2 font-semibold ${
+                  serverDown ? 'text-red-300' : 'text-blue-200'
+                }`}>
+                  {serverDown ? '⚠️ Server Unavailable - Demo Mode' : 'Demo Credentials:'}
                 </p>
                 <div className="text-center text-sm text-gray-400 space-y-1">
                   <div>Username: <span className="text-blue-400 font-mono">admin</span></div>
                   <div>Password: <span className="text-blue-400 font-mono">makstark2024</span></div>
                 </div>
+                {serverDown && (
+                  <p className="text-xs text-red-300 mt-3 text-center">
+                    The server is currently down. You can login with demo credentials to access the dashboard in demo mode.
+                  </p>
+                )}
               </motion.div>
 
               {/* Divider */}
