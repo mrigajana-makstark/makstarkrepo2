@@ -47,9 +47,9 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
   const navItems = [
     { path: '/dashboard/new-entry', icon: PlusCircle, label: 'New Entry', featured: true },
     { path: '/dashboard/portfolio-upload', icon: ImageIcon, label: 'Card Upload & Management' },
-    { path: '/dashboard/pdf-generator', icon: FileText, label: 'PDF Generator' },
+   // { path: '/dashboard/pdf-generator', icon: FileText, label: 'PDF Generator' },
     { path: '/dashboard/offer-letter', icon: Mail, label: 'Offer Letter Generator' },
-    { path: '/dashboard/quotation', icon: Calculator, label: 'Quotation Generator' },
+   // { path: '/dashboard/quotation', icon: Calculator, label: 'Quotation Generator' },
     { path: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
 

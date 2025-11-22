@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { X, ExternalLink, Calendar, MapPin, User } from 'lucide-react';
@@ -7,28 +7,28 @@ import { Badge } from './ui/badge';
 import { Dialog, DialogContent } from './ui/dialog';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
+type Project = {
+  id: number;
+  title: string;
+  category: string;
+  image: string;
+  description: string;
+  client: string;
+  date: string;
+  location: string;
+  details: string;
+  gallery: string[];
+  tags: string[];
+};
+
 export function PortfolioPage() {
   const [activeFilter, setActiveFilter] = useState('All');
-
-  type Project = {
-    id: number;
-    title: string;
-    category: string;
-    image: string;
-    description: string;
-    client: string;
-    date: string;
-    location: string;
-    details: string;
-    gallery: string[];
-    tags: string[];
-  };
-
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
 
   const filters = ['All', 'Weddings', 'Events', 'Films', 'Branding', 'Merchandise'];
 
-  const projects: Project[] = [
+  const defaultProjects: Project[] = [
     {
       id: 1,
       title: '25 Years Anniversary Wedding',
@@ -133,9 +133,57 @@ export function PortfolioPage() {
     }
   ];
 
+  // Load custom portfolio cards from localStorage and merge with default projects
+  useEffect(() => {
+    const loadCustomCards = () => {
+      try {
+        const storedCards = localStorage.getItem('customPortfolioCards');
+        const customCards = storedCards ? JSON.parse(storedCards) : [];
+        
+        // Transform custom cards to Project format
+        const transformedCards: Project[] = customCards.map((card: any) => ({
+          id: card.id + 10000, // Offset ID to avoid conflicts with default projects
+          title: card.title,
+          category: card.category,
+          image: card.image, // Now stored as ImageKit URL
+          description: card.description,
+          client: card.client,
+          date: card.date,
+          location: card.location,
+          details: card.details,
+          gallery: card.gallery || [],
+          tags: card.tags || []
+        }));
+        
+        console.log(`Loaded ${transformedCards.length} custom portfolio cards`);
+        
+        // Merge default projects with custom cards
+        setAllProjects([...defaultProjects, ...transformedCards]);
+      } catch (error) {
+        console.error('Error loading custom portfolio cards:', error);
+        setAllProjects(defaultProjects);
+      }
+    };
+
+    // Load on initial mount
+    loadCustomCards();
+
+    // Listen for custom card updates from PortfolioCardUpload
+    const handleCardAdded = (event: Event) => {
+      console.log('customCardAdded event received:', event);
+      // Use setTimeout to ensure localStorage is fully updated
+      setTimeout(() => {
+        loadCustomCards();
+      }, 150);
+    };
+
+    window.addEventListener('customCardAdded', handleCardAdded);
+    return () => window.removeEventListener('customCardAdded', handleCardAdded);
+  }, []);
+
   const filteredProjects = activeFilter === 'All' 
-    ? projects 
-    : projects.filter(project => project.category === activeFilter);
+    ? allProjects 
+    : allProjects.filter((project: Project) => project.category === activeFilter);
 
   return (
     <div className="min-h-screen pt-16">
@@ -206,7 +254,7 @@ export function PortfolioPage() {
               transition={{ duration: 0.3 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             >
-              {filteredProjects.map((project, index) => (
+              {filteredProjects.map((project: Project, index: number) => (
                 <motion.div
                   key={project.id}
                   initial={{ opacity: 0, scale: 0.9 }}

@@ -35,6 +35,11 @@ export const API_ENDPOINTS = {
   calculate: {
     amount: `${API_BASE_URL}/calculate-amount`,
   },
+  // Image upload endpoints
+  upload: {
+    base64Image: `${API_BASE_URL}/upload-base64-image`,
+    file: `${API_BASE_URL}/upload-image`,
+  },
   // Supabase functions
   supabase: {
     processEntry: `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/make-server-e9eea15d/process-entry`,

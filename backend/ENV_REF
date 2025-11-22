@@ -1,0 +1,9 @@
+VITE_SUPABASE_URL=https://wcwudnrtrccudoaigneo.supabase.co
+VITE_SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3VkbnJ0cmNjdWRvYWlnbmVvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzU5OTA4OCwiZXhwIjoyMDczMTc1MDg4fQ.oef-sMzX_0b15OOWECcUOGB3mDdlrG7L9_wYX9GhrLg
+VITE_API_URL=http://localhost:8000
+
+# ImageKit Configuration
+# Get these from https://imagekit.io/dashboard/developer/api-keys
+VITE_IMAGEKIT_PRIVATE_KEY=private_bMrenZz6MFhwsmT50NNWbmaCrqc=
+VITE_IMAGEKIT_PUBLIC_KEY=public_xaSonC4XlhwAkY6j9KZL5BhgmX4=
+VITE_IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/makstarkimages

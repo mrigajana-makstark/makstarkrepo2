@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -10,6 +10,7 @@ from pdf_generator import router as pdf_router
 from calculateAmount import router as calc_router
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from imagekit_upload import upload_to_imagekit, upload_base64_to_imagekit
 import os
 
 # Load environment variables from .env file
@@ -90,3 +91,70 @@ def read_users_me(token: str = Depends(oauth2_scheme)):
 @app.get("/")
 def read_root():
     return {"message": "Mak Stark API is running time"}
+
+@app.post("/upload-image")
+async def upload_image(file: UploadFile = File(...)):
+    """
+    Upload image to ImageKit
+    
+    Returns:
+        dict: ImageKit response with URL and metadata
+    """
+    try:
+        # Read file content
+        file_content = await file.read()
+        
+        # Upload to ImageKit
+        result = upload_to_imagekit(file_content, file.filename or "image.jpg")
+        
+        if result:
+            return {
+                "success": True,
+                "data": result
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to upload image to ImageKit")
+    
+    except Exception as e:
+        print(f"Upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+@app.post("/upload-base64-image")
+async def upload_base64_image(data: dict):
+    """
+    Upload base64 encoded image to ImageKit
+    
+    Request body:
+        {
+            "image": "data:image/jpeg;base64,...",
+            "filename": "image.jpg",
+            "folder": "portfolio"
+        }
+    
+    Returns:
+        dict: ImageKit response with URL and metadata
+    """
+    try:
+        image_data = data.get('image')
+        filename = data.get('filename', 'image.jpg')
+        folder = data.get('folder', 'portfolio')
+        
+        if not image_data:
+            raise HTTPException(status_code=400, detail="Image data is required")
+        
+        # Upload to ImageKit
+        result = upload_base64_to_imagekit(image_data, filename, folder)
+        
+        if result:
+            return {
+                "success": True,
+                "data": result
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to upload image to ImageKit")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Base64 upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
