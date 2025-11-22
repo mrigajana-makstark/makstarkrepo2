@@ -3,3 +3,8 @@ dist/
 .env
 .env.local
 
+__pycache__/
+*.pyc
+.env
+test.db
+*.db

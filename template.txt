@@ -1,0 +1,20 @@
+Offer Letter
+
+{start_date}
+
+Dear {name},
+
+We are excited to offer you the position of Associate with Mak Stark. We were impressed by your interest and the preferences you expressed in the Phase 3.0 Google Form, and we believe you will thrive as part of our team.
+
+For the next one month, you will begin as an {position} Associate under the department of {department}. During this period, your job role will be evaluated based on your work culture and efficiency. Following this initial phase, you will be assigned a specific role reflecting your efforts and contributions.
+
+Your compensation will be performance-based, ranging near Rs.{salary}, depending on the work completed. Your anticipated start date is {start_date} and the evaluation period ends on {end_date}. This offer is contingent upon standard onboarding procedures.
+
+Please let us know your decision by 22nd October,2025. You may contact me at info.makstark@gmail.com if you have any questions.
+
+{additionalNotes}
+
+Sincerely,  
+Ayan Maity  
+Co-Founder & CMO  
+Mak Stark
