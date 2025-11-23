@@ -251,11 +251,11 @@ async def generate_offer_pdf(request: Request, preview: bool = Query(False), use
     )
     return response
 
-# Generate Entry PDF with tabular deliverables format
+# Generate Entry PDF with all project details
 @router.post("/generate-entry-pdf")
 async def generate_entry_pdf(request: Request, preview: bool = Query(False), user=Depends(get_current_user)):
     """
-    Generate a project entry PDF with all details.
+    Generate a comprehensive project entry PDF with all details.
     Accepts form data from NewEntryPage; returns PDF (inline for preview).
     """
     try:
@@ -265,7 +265,7 @@ async def generate_entry_pdf(request: Request, preview: bool = Query(False), use
         print(f"JSON parse error: {e}")
         raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
 
-    # Create PDF with complete project details
+    # Create PDF with comprehensive project details
     pdf = CustomPDF()
     pdf.add_page()
     
@@ -273,23 +273,16 @@ async def generate_entry_pdf(request: Request, preview: bool = Query(False), use
     if os.path.exists(FONT_PATH):
         try:
             pdf.add_font("DejaVu", "", FONT_PATH, uni=True)
-            pdf.set_font("DejaVu", "", 9)
+            pdf.set_font("DejaVu", "", 8.5)
         except Exception:
-            pdf.set_font("Arial", "", 9)
+            pdf.set_font("Arial", "", 8.5)
     else:
-        pdf.set_font("Arial", "", 9)
+        pdf.set_font("Arial", "", 8.5)
 
     # Position below letterhead
-    pdf.set_xy(15, 50)
+    pdf.set_xy(12, 48)
     
-    # Title
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, "MAK STARK CREATIVE AGENCY", ln=True, align="C")
-    pdf.set_font("Arial", "B", 11)
-    pdf.cell(0, 7, "PROJECT DETAILS & INVOICE", ln=True, align="C")
-    pdf.set_font("Arial", "", 9)
-    
-    # Extract data
+    # Extract all data
     client_name = body.get('clientName', 'N/A')
     event_name = body.get('eventName', 'N/A')
     client_contact = body.get('clientContact', 'N/A')
@@ -304,49 +297,17 @@ async def generate_entry_pdf(request: Request, preview: bool = Query(False), use
     poc = body.get('empPointOfContact', 'N/A')
     referral = body.get('referral', 'Direct Client')
     additional_notes = body.get('additionalNotes', 'None')
+    deliverables = body.get('deliverables', [])
     
     # Calculate completion date
     completion_date = event_end
     try:
-        from datetime import datetime, timedelta
         end_date = datetime.strptime(event_end, '%Y-%m-%d')
         completion_date = (end_date + timedelta(days=30)).strftime('%Y-%m-%d')
     except:
         pass
     
-    # HEADER SECTION
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(0, 5, f"Event Code: {event_code}", ln=True)
-    pdf.cell(0, 5, f"Invoice Date: {invoice_date}", ln=True)
-    pdf.ln(2)
-    
-    # CLIENT INFORMATION
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(0, 6, "CLIENT INFORMATION:", ln=True)
-    pdf.set_font("Arial", "", 8.5)
-    pdf.cell(0, 5, f"Name: {client_name}", ln=True)
-    pdf.cell(0, 5, f"Contact: {client_contact}", ln=True)
-    pdf.cell(0, 5, f"Email: {client_email}", ln=True)
-    pdf.cell(0, 5, f"Event: {event_name}", ln=True)
-    pdf.ln(2)
-    
-    # EVENT DETAILS
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(0, 6, "EVENT DETAILS:", ln=True)
-    pdf.set_font("Arial", "", 8.5)
-    pdf.cell(0, 5, f"Start Date: {event_start}", ln=True)
-    pdf.cell(0, 5, f"End Date: {event_end}", ln=True)
-    pdf.cell(0, 5, f"Type: {event_type}", ln=True)
-    pdf.ln(2)
-    
-    # FINANCIAL DETAILS
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(0, 6, "FINANCIAL DETAILS:", ln=True)
-    pdf.set_font("Arial", "", 8.5)
-    pdf.cell(0, 5, f"Base Amount: Rs. {amount}", ln=True)
-    pdf.cell(0, 5, f"Discount: {discount}%", ln=True)
-    
-    # Calculate total
+    # Calculate financial details
     try:
         amount_val = float(amount) if amount else 0
         discount_val = float(discount) if discount else 0
@@ -354,93 +315,135 @@ async def generate_entry_pdf(request: Request, preview: bool = Query(False), use
         subtotal = amount_val - discount_amount
         tax_amount = subtotal * 0.18
         total_amount = subtotal + tax_amount
-        pdf.cell(0, 5, f"Total Amount (incl. 18% GST): Rs. {total_amount:.2f}", ln=True)
     except:
-        pdf.cell(0, 5, f"Total Amount (incl. 18% GST): Rs. {amount}", ln=True)
+        subtotal = amount
+        tax_amount = 0
+        total_amount = amount
     
+    # HEADER
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(0, 5, "MAK STARK CREATIVE AGENCY", ln=True, align="C")
+    pdf.set_font("Arial", "B", 9)
+    pdf.cell(0, 4, "PROJECT DETAILS & INVOICE", ln=True, align="C")
+    pdf.set_font("Arial", "", 8)
     pdf.ln(2)
+    
+    # Event Code & Invoice Number & Date
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(60, 4, f"Event Code: {event_code}")
+    pdf.cell(0, 4, f"Invoice Date: {invoice_date}", ln=True)
+    pdf.set_font("Arial", "", 8)
+    pdf.ln(1)
+    
+    # CLIENT INFORMATION
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(0, 4, "CLIENT INFORMATION:", ln=True)
+    pdf.set_font("Arial", "", 7.5)
+    pdf.cell(0, 3.5, f"Name: {client_name}", ln=True)
+    pdf.cell(0, 3.5, f"Contact: {client_contact}", ln=True)
+    pdf.cell(0, 3.5, f"Email: {client_email}", ln=True)
+    pdf.cell(0, 3.5, f"Event: {event_name}", ln=True)
+    pdf.ln(1)
+    
+    # EVENT DETAILS
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(0, 4, "EVENT DETAILS:", ln=True)
+    pdf.set_font("Arial", "", 7.5)
+    pdf.cell(0, 3.5, f"Start Date: {event_start}", ln=True)
+    pdf.cell(0, 3.5, f"End Date: {event_end}", ln=True)
+    pdf.cell(0, 3.5, f"Type: {event_type}", ln=True)
+    pdf.ln(1)
+    
+    # FINANCIAL DETAILS
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(0, 4, "FINANCIAL DETAILS:", ln=True)
+    pdf.set_font("Arial", "", 7.5)
+    pdf.cell(0, 3.5, f"Base Amount: Rs. {amount}", ln=True)
+    pdf.cell(0, 3.5, f"Discount: {discount}%", ln=True)
+    pdf.cell(0, 3.5, f"Total Amount (incl. 18% GST): Rs. {total_amount:.2f}", ln=True)
+    pdf.ln(1)
     
     # DELIVERABLES TABLE
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(0, 6, "DELIVERABLES:", ln=True)
-    pdf.set_font("Arial", "", 8)
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(0, 4, "DELIVERABLES:", ln=True)
+    pdf.set_font("Arial", "", 7)
     
     # Table header
-    pdf.set_x(15)
-    col_width = 130
-    status_width = 50
-    pdf.set_fill_color(200, 200, 200)
-    pdf.cell(col_width, 6, "Deliverable", border=1, fill=True)
-    pdf.cell(status_width, 6, "Status", border=1, align="C", fill=True, ln=True)
+    col_width = 125
+    status_width = 40
+    pdf.set_fill_color(220, 220, 220)
+    pdf.set_x(12)
+    pdf.cell(col_width, 4, "Deliverable", border=1, fill=True)
+    pdf.cell(status_width, 4, "Status", border=1, align="C", fill=True, ln=True)
     
     # Table rows
-    deliverables = body.get('deliverables', [])
     for deliverable in deliverables:
-        pdf.set_x(15)
-        # Wrap long deliverable names
-        if len(deliverable) > 40:
-            pdf.multi_cell(col_width, 5, deliverable, border=1)
-            pdf.set_x(145)
-            pdf.cell(status_width, 5, "Included", border=1, align="C")
-            pdf.ln(1)
+        pdf.set_x(12)
+        if len(deliverable) > 35:
+            # Multi-line cell for long deliverables
+            remaining = deliverable
+            first_line = True
+            while remaining:
+                line = remaining[:35]
+                remaining = remaining[35:]
+                if first_line:
+                    pdf.cell(col_width, 4, line, border=1)
+                    pdf.cell(status_width, 4, "Included", border=1, align="C", ln=True)
+                    first_line = False
+                else:
+                    pdf.set_x(12)
+                    pdf.cell(col_width, 4, line, border=1)
+                    pdf.cell(status_width, 4, "", border=1, ln=True)
         else:
-            pdf.cell(col_width, 5, deliverable, border=1)
-            pdf.cell(status_width, 5, "Included", border=1, align="C", ln=True)
+            pdf.cell(col_width, 4, deliverable, border=1)
+            pdf.cell(status_width, 4, "Included", border=1, align="C", ln=True)
     
-    pdf.ln(2)
+    pdf.ln(1)
     
     # PROJECT TIMELINE
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(0, 6, "PROJECT TIMELINE:", ln=True)
-    pdf.set_font("Arial", "", 8.5)
-    timeline_text = f"""Event Duration: {event_start} to {event_end}
-Pre-production: 7-14 days before event
-Post-production: 30 days after event completion
-Delivery: {completion_date}"""
-    pdf.multi_cell(0, 4, timeline_text)
-    pdf.ln(2)
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(0, 4, "PROJECT TIMELINE:", ln=True)
+    pdf.set_font("Arial", "", 7.5)
+    timeline_text = f"Event Duration: {event_start} to {event_end}\nPre-production: 7-14 days before event\nPost-production: 30 days after event completion\nDelivery: {completion_date}"
+    pdf.multi_cell(0, 3.5, timeline_text)
+    pdf.ln(1)
     
     # ESTIMATED COMPLETION
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(0, 5, f"ESTIMATED COMPLETION: {completion_date}", ln=True)
-    pdf.ln(2)
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(0, 4, f"ESTIMATED COMPLETION: {completion_date}", ln=True)
+    pdf.ln(1)
     
     # POINT OF CONTACT
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(0, 6, "POINT OF CONTACT:", ln=True)
-    pdf.set_font("Arial", "", 8.5)
-    pdf.multi_cell(0, 4, poc)
-    pdf.ln(2)
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(0, 4, "POINT OF CONTACT:", ln=True)
+    pdf.set_font("Arial", "", 7.5)
+    pdf.multi_cell(0, 3.5, poc)
+    pdf.ln(1)
     
     # REFERRAL
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(0, 5, f"REFERRAL: {referral}", ln=True)
-    pdf.ln(2)
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(0, 4, f"REFERRAL: {referral}", ln=True)
+    pdf.ln(1)
     
     # TERMS & CONDITIONS
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(0, 6, "TERMS & CONDITIONS:", ln=True)
-    pdf.set_font("Arial", "", 8)
-    terms = """1. Payment Terms: 50% advance, 50% on delivery
-2. Cancellation Policy: 30 days notice required
-3. Delivery: All deliverables within agreed timeline
-4. Revisions: Up to 2 rounds included
-5. Copyright: All materials property of Mak Stark
-6. Confidentiality: Project details remain confidential"""
-    pdf.multi_cell(0, 4, terms)
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(0, 4, "TERMS & CONDITIONS:", ln=True)
+    pdf.set_font("Arial", "", 7)
+    terms = "1. Payment Terms: 50% advance, 50% on delivery\n2. Cancellation Policy: 30 days notice required\n3. Delivery: All deliverables within agreed timeline\n4. Revisions: Up to 2 rounds included\n5. Copyright: All materials property of Mak Stark\n6. Confidentiality: Project details remain confidential"
+    pdf.multi_cell(0, 3, terms)
     pdf.ln(1)
     
     # ADDITIONAL NOTES
     if additional_notes and additional_notes != 'None':
-        pdf.set_font("Arial", "B", 9)
-        pdf.cell(0, 6, "ADDITIONAL NOTES:", ln=True)
-        pdf.set_font("Arial", "", 8.5)
-        pdf.multi_cell(0, 4, additional_notes)
+        pdf.set_font("Arial", "B", 8)
+        pdf.cell(0, 4, "ADDITIONAL NOTES:", ln=True)
+        pdf.set_font("Arial", "", 7.5)
+        pdf.multi_cell(0, 3.5, additional_notes)
     
     # Footer
-    pdf.ln(3)
-    pdf.set_font("Arial", "", 7)
-    pdf.cell(0, 4, "Generated by Mak Stark Dashboard System", ln=True, align="C")
+    pdf.ln(1)
+    pdf.set_font("Arial", "", 6)
+    pdf.cell(0, 3, "Generated by Mak Stark Dashboard System", ln=True, align="C")
     
     # Generate PDF bytes
     try:
