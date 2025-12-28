@@ -116,8 +116,8 @@ export function PortfolioPage() {
     },
     {
       id: 6,
-      title: 'Destination Shoot @ Darjeeling',
-      category: 'Portraits',
+      title: 'Travel diaries @ Pelling',
+      category: 'Travel',
       image: 'https://images.unsplash.com/photo-1525772764200-be829854c18b?w=800',
       description: 'A cold trip in the heart of mountains capturing candid and intimate moments.',
       client: 'Rikta',

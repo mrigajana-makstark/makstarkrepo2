@@ -16,8 +16,9 @@ import os
 # Load environment variables from .env file
 load_dotenv()
 
-# Mriganka7@2025
-DATABASE_URL = "postgresql://postgres:Mriganka7%402025@db.wcwudnrtrccudoaigneo.supabase.co:5432/postgres"
+# Database connection - use pooler for IPv4 support
+# Format: postgresql://postgres.[PROJECT_REF]:PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:Mriganka7%402025@db.wcwudnrtrccudoaigneo.supabase.co:5432/postgres")
 SECRET_KEY = "19441678e34d5ff1feef4cd612f5a90858e69e24f1853a5d3cb467d4e422b6a9"                     # <-- Put your JWT secret key here
 ALGORITHM = "HS256"
 
@@ -37,10 +38,10 @@ class User(Base):
 # Try to create tables, but don't fail if database is unreachable
 try:
     Base.metadata.create_all(bind=engine)
-    print("✓ Database tables created/verified successfully")
+    print("[OK] Database tables created/verified successfully")
 except Exception as e:
-    print(f"⚠️  Warning: Could not create database tables - {str(e)}")
-    print("⚠️  The server will continue running. Database operations will fail until connection is restored.")
+    print(f"[WARNING] Could not create database tables - {str(e)}")
+    print("[WARNING] The server will continue running. Database operations will fail until connection is restored.")
 
 app = FastAPI()
 
@@ -63,9 +64,18 @@ app.include_router(calc_router)
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
     try:
         db = SessionLocal()
+        # Validate password length (bcrypt has 72 byte limit)
+        if len(form_data.password) > 72:
+            raise HTTPException(status_code=400, detail="Password is too long (maximum 72 characters)")
+        
         user = db.query(User).filter(User.username == form_data.username).first()
-        if not user or not pwd_context.verify(form_data.password, user.hashed_password):
+        if not user:
             raise HTTPException(status_code=400, detail="opps! look like Incorrect username or password, or maybe you dont have an account yet, please contact to admin")
+        
+        # Verify password
+        if not pwd_context.verify(form_data.password, user.hashed_password):
+            raise HTTPException(status_code=400, detail="opps! look like Incorrect username or password, or maybe you dont have an account yet, please contact to admin")
+        
         # Create JWT token
         token = jwt.encode({"sub": user.username, "role": user.role}, SECRET_KEY, algorithm=ALGORITHM)
         return {"access_token": token, "token_type": "bearer"}
